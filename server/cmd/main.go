@@ -5,18 +5,31 @@ import (
 	"net/http"
 	"os"
 	"v1/familyManager/configs"
+	"v1/familyManager/internal/auth"
+	"v1/familyManager/internal/user"
 	"v1/familyManager/pkg/db"
 	"v1/familyManager/pkg/middleware"
 )
 
 func App() http.Handler {
+	// Configs
 	conf := configs.LoadConfig()
 	db := db.New(conf)
-	fmt.Println(db)
-
 	router := http.NewServeMux()
-	// authServices := auth.NewAuthService(userRepository)
 
+	// Repository
+	userRepository := user.NewUserRepository(db)
+
+	// Service
+	authServices := auth.NewAuthService(userRepository)
+
+	// Handler
+	auth.NewAuthHandler(router, auth.AuthHandlerDeps{
+		Config:      conf,
+		AuthService: authServices,
+	})
+
+	// Middleware
 	stack := middleware.Chain(
 		middleware.CORS,
 	)
@@ -26,9 +39,9 @@ func App() http.Handler {
 func main() {
 	app := App()
 	server := http.Server{
-		Addr:    os.Getenv("SERVER_PORT"),
+		Addr:    string(":" + os.Getenv("SERVER_PORT")),
 		Handler: app,
 	}
-	fmt.Println("Server is lestining on port 8081")
+	fmt.Println("Server is lestining on port", os.Getenv("SERVER_PORT"))
 	server.ListenAndServe()
 }

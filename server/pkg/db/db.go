@@ -9,11 +9,11 @@ import (
 )
 
 type Storage struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 func New(conf *configs.Config) *Storage {
-	storagePath := fmt.Sprintf("postgres::/%s:%s@localhost:%s/%s?sslmode=disable",
+	storagePath := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable",
 		conf.Db.DatabaseUser,
 		conf.Db.DatabasePassword,
 		conf.Db.DatabasePort,
@@ -23,5 +23,5 @@ func New(conf *configs.Config) *Storage {
 	if err != nil {
 		panic(err)
 	}
-	return &Storage{db: db}
+	return &Storage{DB: db}
 }

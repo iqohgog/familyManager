@@ -1,6 +1,11 @@
 package user
 
-import "v1/familyManager/pkg/db"
+import (
+	"database/sql"
+	"v1/familyManager/pkg/db"
+
+	_ "github.com/lib/pq"
+)
 
 type UserRepository struct {
 	Storage *db.Storage
@@ -12,19 +17,38 @@ func NewUserRepository(storage *db.Storage) *UserRepository {
 	}
 }
 
-// func (repo *UserRepository) Create(user *User) (*User, error) {
-// 	result := repo.Database.DB.Create(user)
-// 	if result.Error != nil {
-// 		return nil, result.Error
-// 	}
-// 	return user, nil
-// }
+func (repo *UserRepository) Create(user *User) (*User, error) {
+	stmt, err := repo.Storage.DB.Prepare(`
+	INSERT INTO users(
+		first_name, last_name, email, hash_password
+	)
+	VALUES($1, $2, $3, $4)
+	`)
+	if err != nil {
+		return nil, err
+	}
+	err = stmt.QueryRow(user.FirstName, user.LastName, user.Email, user.HashPass).Scan()
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	return user, nil
+}
 
-// func (repo *UserRepository) GetByEmail(email string) (*User, error) {
-// 	var user User
-// 	result := repo.Database.DB.First(&user, "Email = ?", email)
-// 	if result.Error != nil {
-// 		return nil, result.Error
-// 	}
-// 	return &user, nil
-// }
+func (repo *UserRepository) GetByEmail(email string) (*User, error) {
+	stmt, err := repo.Storage.DB.Prepare(`
+		SELECT first_name, last_name, email, hash_password, created_at FROM users
+		WHERE email = $1
+	`)
+	if err != nil {
+		return nil, err
+	}
+	row := stmt.QueryRow(email)
+	var user User
+	err = row.Scan(&user.FirstName, &user.LastName, &user.Email, &user.HashPass, &user.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// Нужно ли реализовывать Update и Put? или Delete?
