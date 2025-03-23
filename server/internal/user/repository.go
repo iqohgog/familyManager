@@ -36,7 +36,7 @@ func (repo *UserRepository) Create(user *User) (*User, error) {
 
 func (repo *UserRepository) GetByEmail(email string) (*User, error) {
 	stmt, err := repo.Storage.DB.Prepare(`
-		SELECT first_name, last_name, email, hash_password, created_at FROM users
+		SELECT id, first_name, last_name, email, hash_password FROM users
 		WHERE email = $1
 	`)
 	if err != nil {
@@ -44,7 +44,24 @@ func (repo *UserRepository) GetByEmail(email string) (*User, error) {
 	}
 	row := stmt.QueryRow(email)
 	var user User
-	err = row.Scan(&user.FirstName, &user.LastName, &user.Email, &user.HashPass, &user.CreatedAt)
+	err = row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.HashPass)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (repo *UserRepository) GetByID(id string) (*User, error) {
+	stmt, err := repo.Storage.DB.Prepare(`
+		SELECT first_name, last_name, email, hash_password FROM users
+		WHERE ID = $1
+	`)
+	if err != nil {
+		return nil, err
+	}
+	row := stmt.QueryRow(id)
+	var user User
+	err = row.Scan(&user.FirstName, &user.LastName, &user.Email, &user.HashPass)
 	if err != nil {
 		return nil, err
 	}
