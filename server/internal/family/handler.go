@@ -44,7 +44,7 @@ func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if user.FamilyID != "" {
+		if user.FamilyID != nil {
 			http.Error(w, "You already in a family", http.StatusBadRequest)
 			return
 		}
