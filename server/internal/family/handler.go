@@ -1,7 +1,10 @@
 package family
 
 import (
+	"fmt"
 	"net/http"
+	"net/smtp"
+	"strconv"
 	"v1/familyManager/configs"
 	"v1/familyManager/internal/invite"
 	"v1/familyManager/internal/user"
@@ -30,6 +33,7 @@ func NewFamilyHandler(router *http.ServeMux, deps FamilyHandlerDeps) {
 		UserRepository:         deps.UserRepository,
 	}
 	router.Handle("POST /family/create", middleware.IsAuthed(handler.CreateFamily(), deps.Config))
+	router.Handle("POST /family/invite", middleware.IsAuthed(handler.InviteToFamily(), deps.Config))
 }
 
 func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
@@ -59,6 +63,87 @@ func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
 		res.Json(w, createdFamily, 201)
 	}
 }
+
+func (handler *FamilyHandler) InviteToFamily() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := req.HandleBody[FamilyInvite](w, r)
+		if err != nil {
+			return
+		}
+
+		email := body.Email
+		user, err := handler.UserRepository.GetByEmail(email)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if user.FamilyID != nil {
+			http.Error(w, "User already in a family", http.StatusBadRequest)
+			return
+		}
+		emailInviter := r.Context().Value(middleware.ContextEmailKey).(string)
+		inviter, err := handler.UserRepository.GetByEmail(emailInviter)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		family, err := handler.FamilyRepository.GetByCreatorID(inviter.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		id, _ := strconv.Atoi(user.ID)
+		_, err = handler.FamilyInviteRepository.Create(&invite.FamilyInvite{
+			FamilyID:   family.ID,
+			InventedID: id,
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		sendEmailToInvite(user.Email, family.Name)
+	}
+}
+
+func sendEmailToInvite(email string, nameFamily string) {
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+	from := "s6i6xfeet@gmail.com"
+	password := "lfzbakbuildvbvzj"
+
+	to := []string{email}
+	subject := fmt.Sprintf("Привет, тебя приглашают в семью '%s'!\n", nameFamily)
+	body := `
+		<html>
+		<body>
+			<a href="http://localhost:8080"><p>Ответь на приглашение скорее! </p></a>
+		</body>
+	</html>`
+
+	message := []byte("MIME-Version: 1.0\r\n" +
+		"Content-Type: text/html; charset=UTF-8\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"\r\n" + body)
+
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	if err != nil {
+		fmt.Println("Error sending email:", err)
+		return
+	}
+	fmt.Println("Email sent successfully!")
+}
+
+// func sendEmailToCallback(email string) {
+// 	smtpHost := "smtp.gmail.com"
+// 	smtpPort := "587"
+// 	from := "s6i6xfeet@gmail.com"
+// 	password := "lfzbakbuildvbvzj"
+
+// 	to := []string{email}
+
+// }
 
 /*
 

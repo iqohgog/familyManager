@@ -62,3 +62,20 @@ func (repo *FamilyRepository) GetByID(id string) (*Family, error) {
 	}
 	return &family, nil
 }
+
+func (repo *FamilyRepository) GetByCreatorID(id string) (*Family, error) {
+	stmt, err := repo.Storage.DB.Prepare(`
+		SELECT id, name FROM families
+		WHERE creator_id = $1
+	`)
+	if err != nil {
+		return nil, err
+	}
+	row := stmt.QueryRow(id)
+	var family Family
+	err = row.Scan(&family.ID, &family.Name)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	return &family, nil
+}

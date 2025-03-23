@@ -1,8 +1,7 @@
 package family
 
 type FamilyInvite struct {
-	FamilyName string `json:"family_name"`
-	Status     string `json:"status"`
+	Email string `json:"email"`
 }
 
 type FamilyCreateRequest struct {

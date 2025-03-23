@@ -1,7 +1,7 @@
 package invite
 
 type FamilyInvite struct {
-	FamilyID   string
-	InventedID string
+	FamilyID   int
+	InventedID int
 	Status     string
 }

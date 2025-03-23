@@ -45,8 +45,11 @@ func (repo *UserRepository) GetByEmail(email string) (*User, error) {
 	row := stmt.QueryRow(email)
 	var user User
 	err = row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.HashPass, &user.FamilyID)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
+	}
+	if user.ID == "" {
+		return nil, nil
 	}
 	return &user, nil
 }
