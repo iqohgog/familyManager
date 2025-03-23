@@ -36,7 +36,7 @@ func (repo *UserRepository) Create(user *User) (*User, error) {
 
 func (repo *UserRepository) GetByEmail(email string) (*User, error) {
 	stmt, err := repo.Storage.DB.Prepare(`
-		SELECT id, first_name, last_name, email, hash_password FROM users
+		SELECT id, first_name, last_name, email, hash_password, family_id FROM users
 		WHERE email = $1
 	`)
 	if err != nil {
@@ -44,7 +44,7 @@ func (repo *UserRepository) GetByEmail(email string) (*User, error) {
 	}
 	row := stmt.QueryRow(email)
 	var user User
-	err = row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.HashPass)
+	err = row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.HashPass, &user.FamilyID)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (repo *UserRepository) GetByEmail(email string) (*User, error) {
 
 func (repo *UserRepository) GetByID(id string) (*User, error) {
 	stmt, err := repo.Storage.DB.Prepare(`
-		SELECT first_name, last_name, email, hash_password FROM users
+		SELECT first_name, last_name, email, hash_password, family_id FROM users
 		WHERE ID = $1
 	`)
 	if err != nil {
@@ -61,11 +61,25 @@ func (repo *UserRepository) GetByID(id string) (*User, error) {
 	}
 	row := stmt.QueryRow(id)
 	var user User
-	err = row.Scan(&user.FirstName, &user.LastName, &user.Email, &user.HashPass)
+	err = row.Scan(&user.FirstName, &user.LastName, &user.Email, &user.HashPass, &user.FamilyID)
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-// Нужно ли реализовывать Update и Put? или Delete?
+func (repo *UserRepository) RemoveFromFamily(userID int) error {
+	stmt, err := repo.Storage.DB.Prepare(`
+		UPDATE users
+		SET family_id = NULL
+		WHERE id = $1
+	`)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

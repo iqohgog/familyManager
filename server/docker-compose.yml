@@ -20,6 +20,7 @@ services:
     networks:
       - internal
 
+
   db:
     image: postgres:16
     container_name: postgres

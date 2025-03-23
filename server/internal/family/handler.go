@@ -1,20 +1,66 @@
 package family
 
+import (
+	"net/http"
+	"v1/familyManager/configs"
+	"v1/familyManager/internal/invite"
+	"v1/familyManager/internal/user"
+	"v1/familyManager/pkg/middleware"
+	"v1/familyManager/pkg/req"
+	"v1/familyManager/pkg/res"
+)
 
+type FamilyHandlerDeps struct {
+	FamilyRepository       *FamilyRepository
+	FamilyInviteRepository *invite.FamilyInviteRepository
+	UserRepository         *user.UserRepository
+	Config                 *configs.Config
+}
 
+type FamilyHandler struct {
+	FamilyRepository       *FamilyRepository
+	FamilyInviteRepository *invite.FamilyInviteRepository
+	UserRepository         *user.UserRepository
+}
+
+func NewFamilyHandler(router *http.ServeMux, deps FamilyHandlerDeps) {
+	handler := &FamilyHandler{
+		FamilyRepository:       deps.FamilyRepository,
+		FamilyInviteRepository: deps.FamilyInviteRepository,
+		UserRepository:         deps.UserRepository,
+	}
+	router.Handle("POST /family/create", middleware.IsAuthed(handler.CreateFamily(), deps.Config))
+}
+
+func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := req.HandleBody[FamilyCreateRequest](w, r)
+		if err != nil {
+			return
+		}
+		email := r.Context().Value(middleware.ContextEmailKey).(string)
+		user, err := handler.UserRepository.GetByEmail(email)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if user.FamilyID != "" {
+			http.Error(w, "You already in a family", http.StatusBadRequest)
+			return
+		}
+		createdFamily, err := handler.FamilyRepository.Create(&Family{
+			Name:      body.Name,
+			CreatorID: user.ID,
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		res.Json(w, createdFamily, 201)
+	}
+}
 
 /*
-
-type LinkHandlerDeps struct {
-	LinkRepository *LinkRepository
-	Config         *configs.Config
-	EventBus       *event.EventBus
-}
-
-type LinkHandler struct {
-	LinkRepository *LinkRepository
-	EventBus       *event.EventBus
-}
 
 func NewLinkHandler(router *http.ServeMux, deps LinkHandlerDeps) {
 	handler := &LinkHandler{LinkRepository: deps.LinkRepository, EventBus: deps.EventBus}

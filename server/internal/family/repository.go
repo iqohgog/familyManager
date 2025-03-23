@@ -17,16 +17,30 @@ func NewFamilyRepository(storage *db.Storage) *FamilyRepository {
 
 func (repo *FamilyRepository) Create(family *Family) (*Family, error) {
 	stmt, err := repo.Storage.DB.Prepare(`
-	INSERT INTO family(
+	INSERT INTO families(
 		name, creator_id
 	)
 	VALUES($1, $2)
+	RETURNING id;
 	`)
 	if err != nil {
 		return nil, err
 	}
-	err = stmt.QueryRow(family.Name, family.CreatorID).Scan()
+	var familyID int
+	err = stmt.QueryRow(family.Name, family.CreatorID).Scan(&familyID)
 	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	stmt, err = repo.Storage.DB.Prepare(`
+	UPDATE users
+	SET family_id = $1
+	WHERE id = $2;
+	`)
+	if err != nil {
+		return nil, err
+	}
+	_, err = stmt.Exec(familyID, family.CreatorID)
+	if err != nil {
 		return nil, err
 	}
 	return family, nil
@@ -34,7 +48,7 @@ func (repo *FamilyRepository) Create(family *Family) (*Family, error) {
 
 func (repo *FamilyRepository) GetByID(id string) (*Family, error) {
 	stmt, err := repo.Storage.DB.Prepare(`
-		SELECT name, creator_id FROM family
+		SELECT name, creator_id FROM families
 		WHERE ID = $1
 	`)
 	if err != nil {

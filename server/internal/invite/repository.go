@@ -9,7 +9,7 @@ type FamilyInviteRepository struct {
 	Storage *db.Storage
 }
 
-func NewFamilyRepository(storage *db.Storage) *FamilyInviteRepository {
+func NewFamilyInviteRepository(storage *db.Storage) *FamilyInviteRepository {
 	return &FamilyInviteRepository{
 		Storage: storage,
 	}
@@ -60,7 +60,7 @@ func (repo *FamilyInviteRepository) GetByID(inventedId string) (*[]FamilyInvite,
 func (repo *FamilyInviteRepository) UpdateStatus(invite *FamilyInvite) error {
 	stmt, err := repo.Storage.DB.Prepare(`
 		UPDATE family_invitations
-		SET status = $1
+		SET status = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE family_id = $2 AND invited_user_id = $3
 	`)
 	if err != nil {
