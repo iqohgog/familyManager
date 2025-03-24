@@ -71,7 +71,7 @@ func (repo *UserRepository) GetByID(id string) (*User, error) {
 	return &user, nil
 }
 
-func (repo *UserRepository) RemoveFromFamily(userID int) error {
+func (repo *UserRepository) RemoveFromFamily(userID string) error {
 	stmt, err := repo.Storage.DB.Prepare(`
 		UPDATE users
 		SET family_id = NULL
