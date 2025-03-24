@@ -8,6 +8,7 @@ import (
 	"v1/familyManager/internal/auth"
 	"v1/familyManager/internal/family"
 	"v1/familyManager/internal/invite"
+	"v1/familyManager/internal/task"
 	"v1/familyManager/internal/user"
 	"v1/familyManager/pkg/db"
 	"v1/familyManager/pkg/middleware"
@@ -23,6 +24,7 @@ func App() http.Handler {
 	userRepository := user.NewUserRepository(db)
 	familyRepository := family.NewFamilyRepository(db)
 	familiInviteRepository := invite.NewFamilyInviteRepository(db)
+	taskRepository := task.NewTaskRepository(db)
 
 	// Service
 	authServices := auth.NewAuthService(userRepository)
@@ -38,6 +40,12 @@ func App() http.Handler {
 		FamilyInviteRepository: familiInviteRepository,
 		UserRepository:         userRepository,
 		Config:                 conf,
+	})
+	task.NewTaskHandler(router, task.TaskHandlerDeps{
+		FamilyRepository: familyRepository,
+		UserRepository:   userRepository,
+		TaskRepository:   taskRepository,
+		Config:           conf,
 	})
 
 	// Middleware

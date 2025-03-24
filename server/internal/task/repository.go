@@ -2,6 +2,7 @@ package task
 
 import (
 	"database/sql"
+	"strconv"
 	"v1/familyManager/pkg/db"
 )
 
@@ -26,8 +27,12 @@ func (repo *TaskRepository) Create(task *Task) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	assigneeIDInt, _ := strconv.Atoi(task.AssigneeID)
+	familyIDInt, _ := strconv.Atoi(task.FamilyID)
+	creatorIDInt, _ := strconv.Atoi(task.CreatorID)
 	var taskID int
-	err = stmt.QueryRow(task.Name, task.Description, task.AssigneeID, task.Priority, task.FamilyID, task.CreatorID).Scan(&taskID)
+	err = stmt.QueryRow(task.Name, task.Description, assigneeIDInt, task.Priority, familyIDInt, creatorIDInt).Scan(&taskID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -51,23 +56,21 @@ func (repo *TaskRepository) UpdateStatus(taskID string, status string) error {
 	return nil
 }
 
-func (repo *TaskRepository) GetTaskByFamilyID(familyID string) (*[]Task, error) {
+func (repo *TaskRepository) GetTaskByFamilyID(familyID int64) (*[]Task, error) {
 	stmt, err := repo.Storage.DB.Prepare(`
         SELECT id, name, description, assignee_id, priority, creator_id
         FROM tasks
-        WHERE family_id = $1 && deleted_at IS NULL
+        WHERE family_id = $1 AND deleted_at IS NULL
     `)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
-
 	rows, err := stmt.Query(familyID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	var tasks []Task
 	for rows.Next() {
 		var task Task
