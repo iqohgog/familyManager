@@ -13,17 +13,9 @@ type FamilyInviteRequest struct {
 }
 
 type FamilyInviteAnswerRequest struct {
-	Answer   bool   `json:"answer"`
 	FamilyID string `json:"family_id"`
 }
 
-type FamilyInviteAnswerResponse struct {
-	Answer bool `json:"answer"`
-}
-
-type FamiliInvitesRequest struct {
-	Email string `json:"email"`
-}
 
 type FamilyInvitesResponse struct {
 	Invites []FamilyInvite `json:"invites"`

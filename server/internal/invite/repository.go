@@ -70,5 +70,31 @@ func (repo *FamilyInviteRepository) UpdateStatus(invite *FamilyInvite) error {
 	if err != nil {
 		return err
 	}
+	if invite.Status == "accepted" {
+		stmt, err = repo.Storage.DB.Prepare(`
+			UPDATE users
+			SET family_id = $1
+			WHERE id = $2
+		`)
+		if err != nil {
+			return err
+		}
+		_, err = stmt.Exec(invite.FamilyID, invite.InventedID)
+		if err != nil {
+			return err
+		}
+		stmt, err = repo.Storage.DB.Prepare(`
+		UPDATE family_invitations
+		SET status = 'declined', updated_at = CURRENT_TIMESTAMP
+		WHERE family_id != $1 AND invited_user_id = $2
+		`)
+		if err != nil {
+			return err
+		}
+		_, err = stmt.Exec(invite.FamilyID, invite.InventedID)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

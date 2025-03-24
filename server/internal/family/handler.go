@@ -34,6 +34,7 @@ func NewFamilyHandler(router *http.ServeMux, deps FamilyHandlerDeps) {
 	}
 	router.Handle("POST /family/create", middleware.IsAuthed(handler.CreateFamily(), deps.Config))
 	router.Handle("POST /family/invite", middleware.IsAuthed(handler.InviteToFamily(), deps.Config))
+	router.Handle("POST /family/{answer}", middleware.IsAuthed(handler.AnswerToInvite(), deps.Config))
 }
 
 func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
@@ -101,7 +102,66 @@ func (handler *FamilyHandler) InviteToFamily() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		sendEmailToInvite(user.Email, family.Name)
+		go sendEmailToInvite(user.Email, family.Name)
+	}
+}
+
+func (handler *FamilyHandler) AnswerToInvite() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		emailInvented := r.Context().Value(middleware.ContextEmailKey).(string)
+		body, err := req.HandleBody[FamilyInviteAnswerRequest](w, r)
+		if err != nil {
+			return
+		}
+		answer := r.PathValue("answer")
+		if answer != "accept" && answer != "decline" {
+			http.Error(w, "Invalid answer", http.StatusBadRequest)
+			return
+		}
+		user, err := handler.UserRepository.GetByEmail(emailInvented)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if user.FamilyID != nil {
+			http.Error(w, "User already in a family", http.StatusBadRequest)
+			return
+		}
+		familyId, err := strconv.Atoi(body.FamilyID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		inventedId, err := strconv.Atoi(user.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if answer == "accept" {
+			err = handler.FamilyInviteRepository.UpdateStatus(&invite.FamilyInvite{
+				FamilyID:   familyId,
+				InventedID: inventedId,
+				Status:     "accepted",
+			})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+		if answer == "decline" {
+			err = handler.FamilyInviteRepository.UpdateStatus(&invite.FamilyInvite{
+				FamilyID:   familyId,
+				InventedID: inventedId,
+				Status:     "declined",
+			})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+		family, _ := handler.FamilyRepository.GetByID(body.FamilyID)
+		creator, _ := handler.UserRepository.GetByID(family.CreatorID)
+		go sendEmailToCallback(creator.Email, answer, user.Email)
 	}
 }
 
@@ -135,15 +195,31 @@ func sendEmailToInvite(email string, nameFamily string) {
 	fmt.Println("Email sent successfully!")
 }
 
-// func sendEmailToCallback(email string) {
-// 	smtpHost := "smtp.gmail.com"
-// 	smtpPort := "587"
-// 	from := "s6i6xfeet@gmail.com"
-// 	password := "lfzbakbuildvbvzj"
+func sendEmailToCallback(email, asnwer, email_user string) {
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+	from := "s6i6xfeet@gmail.com"
+	password := "lfzbakbuildvbvzj"
 
-// 	to := []string{email}
+	to := []string{email}
 
-// }
+	subject := fmt.Sprintf("Привет, пользователь '%s', '%s' твое приглашение!\n", email_user, asnwer)
+	body := ``
+
+	message := []byte("MIME-Version: 1.0\r\n" +
+		"Content-Type: text/html; charset=UTF-8\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"\r\n" + body)
+
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	if err != nil {
+		fmt.Println("Error sending email:", err)
+		return
+	}
+	fmt.Println("Email sent successfully!")
+}
 
 /*
 
