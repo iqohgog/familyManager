@@ -33,27 +33,34 @@ func (repo *FamilyInviteRepository) Create(invite *FamilyInvite) (*FamilyInvite,
 	return invite, nil
 }
 
-func (repo *FamilyInviteRepository) GetByID(inventedId string) (*[]FamilyInvite, error) {
+func (repo *FamilyInviteRepository) GetByID(invitedId string) (*[]FamilyInvites, error) {
 	stmt, err := repo.Storage.DB.Prepare(`
-		SELECT family_id, invited_user_id, status FROM family_invitations
-		WHERE invited_user_id = $1
+		SELECT f.name, fi.invited_user_id, fi.status 
+		FROM family_invitations fi
+		JOIN families f ON fi.family_id = f.id
+		WHERE fi.invited_user_id = $1
 	`)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := stmt.Query(inventedId)
+	defer stmt.Close()
+
+	rows, err := stmt.Query(invitedId)
 	if err != nil {
 		return nil, err
 	}
-	var invites []FamilyInvite
+	defer rows.Close()
+
+	var invites []FamilyInvites
 	for rows.Next() {
-		var invite FamilyInvite
-		err = rows.Scan(&invite.FamilyID, &invite.InventedID, &invite.Status)
+		var invite FamilyInvites
+		err = rows.Scan(&invite.FamilyName, &invite.InventedID, &invite.Status)
 		if err != nil {
 			return nil, err
 		}
 		invites = append(invites, invite)
 	}
+
 	return &invites, nil
 }
 

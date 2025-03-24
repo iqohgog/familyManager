@@ -36,6 +36,7 @@ func NewFamilyHandler(router *http.ServeMux, deps FamilyHandlerDeps) {
 	router.Handle("POST /family/invite", middleware.IsAuthed(handler.InviteToFamily(), deps.Config))
 	router.Handle("POST /family/{answer}", middleware.IsAuthed(handler.AnswerToInvite(), deps.Config))
 	router.Handle("POST /family/exit", middleware.IsAuthed(handler.GoOutFamily(), deps.Config))
+	router.Handle("GET /family/invites", middleware.IsAuthed(handler.InivteFamily(), deps.Config))
 }
 
 func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
@@ -63,6 +64,27 @@ func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
 			return
 		}
 		res.Json(w, createdFamily, 201)
+	}
+}
+
+func (handler *FamilyHandler) InivteFamily() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		email := r.Context().Value(middleware.ContextEmailKey).(string)
+		user, err := handler.UserRepository.GetByEmail(email)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if user.FamilyID == nil {
+			http.Error(w, "You are not in a family", http.StatusBadRequest)
+			return
+		}
+		invites, err := handler.FamilyInviteRepository.GetByID(user.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		res.Json(w, invites, 200)
 	}
 }
 
@@ -160,7 +182,8 @@ func (handler *FamilyHandler) AnswerToInvite() http.HandlerFunc {
 				return
 			}
 		}
-		family, _ := handler.FamilyRepository.GetByID(body.FamilyID)
+		familyId, _ = strconv.Atoi(body.FamilyID)
+		family, _ := handler.FamilyRepository.GetByID(int64(familyId))
 		creator, _ := handler.UserRepository.GetByID(family.CreatorID)
 		go sendEmailToCallback(creator.Email, answer, user.Email)
 	}

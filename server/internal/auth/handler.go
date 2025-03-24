@@ -3,7 +3,9 @@ package auth
 import (
 	"net/http"
 	"v1/familyManager/configs"
+	"v1/familyManager/internal/family"
 	"v1/familyManager/pkg/jwt"
+	"v1/familyManager/pkg/middleware"
 	"v1/familyManager/pkg/req"
 	"v1/familyManager/pkg/res"
 )
@@ -25,6 +27,7 @@ func NewAuthHandler(router *http.ServeMux, deps AuthHandlerDeps) {
 	}
 	router.HandleFunc("POST /auth/login", handler.Login())
 	router.HandleFunc("POST /auth/register", handler.Register())
+	router.Handle("GET /iam", middleware.IsAuthed(handler.WhoIAm(), deps.Config))
 }
 
 func (handler *AuthHandler) Login() http.HandlerFunc {
@@ -72,5 +75,26 @@ func (handler *AuthHandler) Register() http.HandlerFunc {
 			Token: token,
 		}
 		res.Json(w, data, 201)
+	}
+}
+
+func (handler *AuthHandler) WhoIAm() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		email := r.Context().Value(middleware.ContextEmailKey).(string)
+		user, err := handler.AuthService.UserRepository.GetByEmail(email)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if user.FamilyID != nil {
+			familyId, _ := user.FamilyID.(int64)
+			family, err := family.NewFamilyRepository(handler.AuthService.UserRepository.Storage).GetByID(familyId)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			user.FamilyID = family.Name
+		}
+		res.Json(w, user, 200)
 	}
 }

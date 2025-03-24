@@ -1,6 +1,7 @@
 package task
 
 type Task struct {
+	ID          string
 	Name        string
 	Description string
 	AssigneeID  string

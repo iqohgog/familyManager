@@ -5,3 +5,9 @@ type FamilyInvite struct {
 	InventedID int
 	Status     string
 }
+
+type FamilyInvites struct {
+	FamilyName string
+	InventedID int
+	Status     string
+}
