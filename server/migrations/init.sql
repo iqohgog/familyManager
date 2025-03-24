@@ -30,7 +30,6 @@ CREATE TABLE tasks (
     description TEXT,
     assignee_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deadline TIMESTAMP,
     priority priority NOT NULL,
     status status NOT NULL DEFAULT 'ready for work',
     deleted_at TIMESTAMP NULL,
