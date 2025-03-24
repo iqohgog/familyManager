@@ -37,6 +37,7 @@ func NewFamilyHandler(router *http.ServeMux, deps FamilyHandlerDeps) {
 	router.Handle("POST /family/{answer}", middleware.IsAuthed(handler.AnswerToInvite(), deps.Config))
 	router.Handle("POST /family/exit", middleware.IsAuthed(handler.GoOutFamily(), deps.Config))
 	router.Handle("GET /family/invites", middleware.IsAuthed(handler.InivteFamily(), deps.Config))
+	router.Handle("GET /family/users", middleware.IsAuthed(handler.GetUsers(), deps.Config))
 }
 
 func (handler *FamilyHandler) CreateFamily() http.HandlerFunc {
@@ -209,6 +210,41 @@ func (handler *FamilyHandler) GoOutFamily() http.HandlerFunc {
 		res.Json(w, "You left your family", 200)
 	}
 }
+
+func (handler *FamilyHandler) GetUsers() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		email := r.Context().Value(middleware.ContextEmailKey).(string)
+		user, err := handler.UserRepository.GetByEmail(email)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if user.FamilyID == nil {
+			http.Error(w, "You are not in a family", http.StatusBadRequest)
+			return
+		}
+		familyId, _ := user.FamilyID.(int64)
+		family, err := handler.FamilyRepository.GetByID(familyId)
+		if err != nil || family == nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		users, err := handler.UserRepository.UsersByFamilyID(familyId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		res.Json(w, users, 200)
+	}
+}
+
+// familyId, _ := user.FamilyID.(int64)
+// family, err := family.NewFamilyRepository(handler.AuthService.UserRepository.Storage).GetByID(familyId)
+// if err != nil {
+// 	http.Error(w, err.Error(), http.StatusBadRequest)
+// 	return
+// }
+// user.FamilyID = family.Name
 
 func sendEmailToInvite(email string, nameFamily string) {
 	smtpHost := "smtp.gmail.com"

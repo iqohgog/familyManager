@@ -86,3 +86,29 @@ func (repo *UserRepository) RemoveFromFamily(userID string) error {
 	}
 	return nil
 }
+
+func (repo *UserRepository) UsersByFamilyID(familyID int64) (*[]User, error) {
+	stmt, err := repo.Storage.DB.Prepare(`
+		SELECT id, first_name, last_name, email, family_id FROM users
+		WHERE family_id = $1
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query(familyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []User
+	for rows.Next() {
+		var user User
+		err = rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.FamilyID)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return &users, nil
+}
