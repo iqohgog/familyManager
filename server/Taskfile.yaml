@@ -5,4 +5,4 @@ tasks:
     aliases:
       - start
     cmds:
-      - DATABASE_PORT=5432 DATABASE_USER=postgres DATABASE_PASSWORD=password DATABASE_NAME=family SERVER_PORT=8080 SECRET=0hTBL4aYdp0EtnQS7LmQaxWWDZ3k3CRo/ibK1nOTnCM= go run cmd/main.go
+      - DATABASE_PORT=5432 DATABASE_USER=postgres DATABASE_PASSWORD=password DATABASE_NAME=family SERVER_PORT=8080 SECRET=0hTBL4aYdp0EtnQS7LmQaxWWDZ3k3CRo/ibK1nOTnCM= DATABASE_HOST=localhost go run cmd/main.go
