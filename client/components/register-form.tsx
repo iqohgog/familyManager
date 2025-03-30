@@ -46,7 +46,7 @@ export function RegisterForm({
       }
 
       const data = await res.json();
-      localStorage.setItem("token", data.token); // Сохранение токена
+      localStorage.setItem("token", data.token);
       window.location.href = "/";
     } catch (err) {
       setError("Произошла ошибка при регистрации");
