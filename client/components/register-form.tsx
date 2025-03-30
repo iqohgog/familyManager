@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm({
+export function RegisterForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -24,25 +24,32 @@ export function LoginForm({
     const form = e.currentTarget;
     const email = form.email.value;
     const password = form.password.value;
+    const firstName = form.firstName.value;
+    const lastName = form.secondName.value;
 
     try {
-      const res = await fetch("http://localhost:8080/auth/login", {
+      const res = await fetch("http://localhost:8080/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName,
+        }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.message || "Ошибка входа");
+        setError(data.message || "Ошибка регистрации");
         return;
       }
 
       const data = await res.json();
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.token); // Сохранение токена
       window.location.href = "/";
     } catch (err) {
-      setError("Произошла ошибка при входе");
+      setError("Произошла ошибка при регистрации");
     }
   }
 
@@ -50,9 +57,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Войдите в свой аккаунт</CardTitle>
+          <CardTitle>Создайте аккаунт</CardTitle>
           <CardDescription>
-            Введите почту и пароль от вашего аккаунта
+            Введите данные для регистрации нового аккаунта
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -70,16 +77,24 @@ export function LoginForm({
               <div className="grid gap-3">
                 <Label htmlFor="password">Пароль</Label>
                 <Input id="password" type="password" required />
+              </div>
+              <div className="grid gap-3">
+                <Label htmlFor="firstName">Имя</Label>
+                <Input id="firstName" type="text" required />
+              </div>
+              <div className="grid gap-3">
+                <Label htmlFor="secondName">Фамилия</Label>
+                <Input id="secondName" type="text" required />
                 {error && <p className="text-sm text-red-500">{error}</p>}
               </div>
               <Button type="submit" className="w-full">
-                Войти
+                Регистрация
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              У вас нет аккаунта?{" "}
-              <a href="/register" className="underline underline-offset-4">
-                Регистрация
+              У вас уже есть аккаунт?{" "}
+              <a href="/login" className="underline underline-offset-4">
+                Войти
               </a>
             </div>
           </form>
