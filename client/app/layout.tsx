@@ -1,10 +1,9 @@
-"use client";
-
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Roboto, Inter } from "next/font/google";
-import { ModeTwoggle } from "@/components/theme-menu";
-import { Toaster } from "sonner";
+
+import { ThemeProvider } from "@/components/theme-provider";
+import Header from "@/components/Header";
+
 const roboto = Roboto({
   variable: "--font-roboto",
   subsets: ["latin", "cyrillic"],
@@ -21,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" >
       <body
         className={`${roboto.variable}  ${inter.variable}  antialiased relative`}
       >
@@ -31,8 +30,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Toaster />
-          <ModeTwoggle />
+          <Header />
           {children}
         </ThemeProvider>
       </body>

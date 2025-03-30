@@ -11,7 +11,13 @@ import TaskTable from "@/components/task-table";
 
 export default function Home() {
   const router = useRouter();
-  const [activePage, setActivePage] = useState(null);
+  const [activePage, setActivePage] = useState<string | null>(null);
+  const [familyData, setFamilyData] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!familyData) 
+      setFamilyData(localStorage.getItem("FamilyName"));
+  }, [])
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -65,7 +71,7 @@ export default function Home() {
               </div>
             )}
             {activePage === null &&
-              localStorage.getItem("FamilyName") == "null" && (
+              (familyData == null || familyData == "null") && (
                 <div className="flex min-h-svh w-full items-center justify-center p-16 md:p-10">
                   <div className="w-full max-w-sm">
                     <h1 className="text-xl font-bold">
