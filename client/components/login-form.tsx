@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+
 import { cn } from "@/lib/utils";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,7 +44,7 @@ export function LoginForm({
       const data = await res.json();
       localStorage.setItem("token", data.token);
       window.location.href = "/";
-    } catch (err) {
+    } catch {
       setError("Произошла ошибка при входе");
     }
   }
@@ -78,9 +81,9 @@ export function LoginForm({
             </div>
             <div className="mt-4 text-center text-sm">
               У вас нет аккаунта?{" "}
-              <a href="/register" className="underline underline-offset-4">
+              <Link href="/register" className="underline underline-offset-4">
                 Регистрация
-              </a>
+              </Link>
             </div>
           </form>
         </CardContent>
